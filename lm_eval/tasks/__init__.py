@@ -52,6 +52,7 @@ from . import gsm8k
 from . import storycloze
 from . import toxigen
 from . import crowspairs
+from . import wsd
 
 ########################################
 # Translation tasks
@@ -310,6 +311,7 @@ TASK_REGISTRY = {
     # "storycloze_2016": storycloze.StoryCloze2016,
     # "storycloze_2018": storycloze.StoryCloze2018,
     # "sat": sat.SATAnalogies,
+    "wsd": wsd.WSD
 }
 
 
