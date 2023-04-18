@@ -11,7 +11,7 @@ generative pre-trained models on WSD.
 Homepage: TODO: Add the URL to the task's Homepage here.
 """
 from lm_eval.base import Task, rf
-
+from lm_eval.metrics import mean
 
 # TODO: Add the BibTeX citation for the task.
 _CITATION = """
@@ -39,6 +39,12 @@ class WSD(Task):
         # TODO: Fill in the return with `True` if the Task has test data; else `False`.
         return True  # TODO change when testing with FSE False
 
+    # TODO delete, moved to _process_doc 
+    def vec_to_sent(example):
+        # Custom function to reconstruct the sentences into str and not arrays
+        example['surface_forms'] = ' '.join(example['sentence']) 
+        return example
+
     def training_docs(self):
         if self.has_training_docs():
             # We cache training documents in `self._training_docs` for faster
@@ -51,7 +57,8 @@ class WSD(Task):
                 # `map(self._process_doc, self.dataset["validation"])`
                 # In most case you can leave this as is unless the dataset split is
                 # named differently than the default `"train"`.
-                self._training_docs = list(self.dataset["train"])  # SemEval
+                self._training_docs = list(map(self._process_doc, self.dataset["train"])) 
+                #list(self.dataset["train"])  # SemEval
             return self._training_docs
     """
     def validation_docs(self):
@@ -74,29 +81,43 @@ class WSD(Task):
             # `map(self._process_doc, self.dataset["test"])`
             # In most case you can leave this as is unless the dataset split is
             # named differently than the default `"test"`.
-            return self.dataset["test"]
+            #return self.dataset["test"]
+            return map(self._process_doc, self.dataset["test"])
 
-    """"
+    
     def _process_doc(self, doc):
         # TODO: Process (detokenize, strip, replace etc.) each individual `doc`
         # with this function. You can map this across the docs in each available
         # dataset split. See the TODOs in `train_docs`, `validation_docs`, and
         # `test_docs` for snippets.
         # NOTE: DELETE THIS FUNCTION IF UNUSED.
+        doc['sentence'] = ' '.join(doc['sentence']) 
         return doc
-    """
+
 
     def doc_to_text(self, doc):
         # TODO: Format the query prompt portion of the document example.
         # TODO: find the right prompt to trigger the task 
-        return "{}\nQuestion: Quel est le sens du terme ambigu ?\nRéponse:".format(doc["sentence"])
+        #return "{}\nQuestion: Quel est le sens du terme ambigu ?\nRéponse:".format(doc["sentence"])
+        idx = doc["disambiguate_tokens_ids"][0]
+        print("IDX DEBUG", idx)
+        return (
+            "Contexte: {}"
+            "\nQuestion: Est-ce que {} correspond au mot {} dans son contexte ?"
+            "\nRéponse:".format(
+                doc["sentence"],
+                doc["disambiguate_labels"],
+                doc["lemma"][idx]
+                )
+        )
 
     def doc_to_target(self, doc):
         # TODO: Fill in the `target` ("gold answer") variable.
         # The prepended `" "` is required to space out the `doc_to_text` and
         # `doc_to_target` strings.
-        target = doc['disambiguate_labels']  #""
-        return " " + target
+        #target = doc['disambiguate_labels']  #""
+        #return " " + target
+        return " {}".format({0: "non", 1: "oui"}[doc["disambiguate_labels"]])
 
     def construct_requests(self, doc, ctx):
         """Uses RequestFactory to construct Requests and returns an iterable of
@@ -113,8 +134,12 @@ class WSD(Task):
         # TODO: Construct your language model requests with the request factory, `rf`,
         # and return them as an iterable.
         # TODO I have no idea how I should do it 
-        cont_request = rf.greedy_until(ctx, ["\nQuestion:"])
-        return cont_request
+        #cont_request = rf.greedy_until(ctx, ["\nQuestion:"])
+        #return cont_request
+        ll_yes, _ = rf.loglikelihood(ctx, " oui")
+        ll_no, _ = rf.loglikelihood(ctx, " non")
+        return ll_yes, ll_no
+
 
     def process_results(self, doc, results):
         """Take a single document and the LM results and evaluates, returning a
@@ -129,7 +154,13 @@ class WSD(Task):
         # TODO: For each (sub)metric in the task evaluation, add a key-value pair
         # with the metric name as key and the corresponding metric result as value
         # for the current `doc`.
-        return {}
+        #return {}
+        ll_yes, ll_no = results
+        gold = doc["disambiguate_labels"]
+
+        acc = 1.0 if (ll_yes > ll_no) == gold else 0.0
+
+        return {"acc": acc}
 
     def aggregation(self):
         """
@@ -141,10 +172,10 @@ class WSD(Task):
         # with the metric name as key and an aggregation function as value which
         # determines how to combine results from each document in the dataset.
         # Check `lm_eval.metrics` to find built-in aggregation functions.
-        return {}
+        return {"acc": mean}
 
     def higher_is_better(self):
         # TODO: For each (sub)metric in the task evaluation, add a key-value pair
         # with the metric name as key and a `bool` value determining whether or
         # not higher values of that metric are deemed better.
-        return {}
+        return {"acc": True}
