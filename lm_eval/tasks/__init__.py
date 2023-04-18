@@ -53,6 +53,8 @@ from . import storycloze
 from . import toxigen
 from . import crowspairs
 from . import wsd
+from . import fse
+from . import wsdsemcor
 
 ########################################
 # Translation tasks
@@ -311,7 +313,11 @@ TASK_REGISTRY = {
     # "storycloze_2016": storycloze.StoryCloze2016,
     # "storycloze_2018": storycloze.StoryCloze2018,
     # "sat": sat.SATAnalogies,
-    "wsd": wsd.WSD
+    "wsd": wsd.WSD,
+    "wsd_semcor": wsdsemcor.SemCor,
+    "wsd_semeval": wsdsemcor.SemEval,
+    "wsd_wngt": wsdsemcor.WNGT,
+    "fse": fse.FSE
 }
 
 
