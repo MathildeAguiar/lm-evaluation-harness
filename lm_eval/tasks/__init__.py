@@ -55,6 +55,7 @@ from . import crowspairs
 from . import wsd
 from . import fse
 from . import wsdsemcor
+from . import flue
 
 ########################################
 # Translation tasks
@@ -317,7 +318,11 @@ TASK_REGISTRY = {
     "wsd_semcor": wsdsemcor.SemCor,
     "wsd_semeval": wsdsemcor.SemEval,
     "wsd_wngt": wsdsemcor.WNGT,
-    "fse": fse.FSE
+    "fse": fse.FSE,
+    "flue_fse": flue.FSE,
+    "flue_semeval": flue.SemEval,
+    "flue_semcor": flue.SemCor,
+    "flue_wngt": flue.WNGT
 }
 
 
