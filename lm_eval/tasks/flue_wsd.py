@@ -10,6 +10,8 @@ generative pre-trained models on WSD.
 
 Homepage: TODO: Add the URL to the task's Homepage here.
 """
+import random
+
 from lm_eval.base import Task, rf
 from lm_eval.metrics import mean
 
@@ -18,10 +20,10 @@ _CITATION = """
 """
 
 
-class FSE(Task):
+class WSD(Task):
     VERSION = 0
-    DATASET_PATH = "GETALP/FLUE_VSD" 
-    DATASET_NAME = "FSE"  
+    DATASET_PATH = "GETALP/FLUE_WSD"  
+    DATASET_NAME = "SemEval"  
 
     def has_training_docs(self):
         return True
@@ -30,13 +32,7 @@ class FSE(Task):
         return False
 
     def has_test_docs(self):
-        return False  
-
-    # TODO delete, moved to _process_doc 
-    def vec_to_sent(example):
-        # Custom function to reconstruct the sentences into str and not arrays
-        example['surface_forms'] = ' '.join(example['surface_forms']) 
-        return example
+        return False 
 
     def training_docs(self):
         if self.has_training_docs():
@@ -52,9 +48,8 @@ class FSE(Task):
                 # named differently than the default `"train"`.
                 self._training_docs = list(map(self._process_doc, self.dataset["train"])) 
                 #list(self.dataset["train"])  # SemEval
-            return self._training_docs 
-          
-    # TODO should I split the dataset here ? 
+            return self._training_docs
+    
     """
     def test_docs(self):
         if self.has_test_docs():
@@ -76,18 +71,32 @@ class FSE(Task):
         # NOTE: DELETE THIS FUNCTION IF UNUSED.
         doc['surface_forms'] = ' '.join(doc['surface_forms']) 
         return doc
+    
+    def pick_one_ambiguous(self, doc):
+        # Pick up one word out of all the ambiguous ones to feed it into the prompt
+        list_ambiguous = []
+        for i in doc["first_labels"]:
+            if i != '<NONE>':
+                idx = doc["first_labels"].index(i)
+                list_ambiguous.append(idx)
+        
+        ambiguous_word_idx = random.choice(list_ambiguous)
+
+        return ambiguous_word_idx
 
 
     def doc_to_text(self, doc):
         # TODO: Format the query prompt portion of the document example.
         # TODO: find the right prompt to trigger the task 
+        idx = self.pick_one_ambiguous(doc)
+        print("IDX DEBUG", idx)
         return (
             "Contexte: {}"
             "\nQuestion: Est-ce que {} correspond au mot {} dans son contexte ?"
             "\nRéponse:".format(
                 doc["surface_forms"],
-                doc["instance_fine_pos"],  # TODO determine what should be put here, because there is no wn30_key
-                doc["instance_surface_forms"]
+                doc["first_labels"][idx],
+                doc["lemmas"][idx]
                 )
         )
 
@@ -97,7 +106,8 @@ class FSE(Task):
         # `doc_to_target` strings.
         #target = doc['disambiguate_labels']  #""
         #return " " + target
-        return " {}".format({0: "non", 1: "oui"}[doc["instance_fine_pos"]])  # TODO same as previous todo
+        # TODO since we are selecting a random element this is false 
+        return " {}".format({0: "non", 1: "oui"}[doc["first_labels"]])
 
     def construct_requests(self, doc, ctx):
         """Uses RequestFactory to construct Requests and returns an iterable of
@@ -113,7 +123,6 @@ class FSE(Task):
         """
         # TODO: Construct your language model requests with the request factory, `rf`,
         # and return them as an iterable.
-        # TODO I have no idea how I should do it 
         #cont_request = rf.greedy_until(ctx, ["\nQuestion:"])
         #return cont_request
         ll_yes, _ = rf.loglikelihood(ctx, " oui")
@@ -136,8 +145,9 @@ class FSE(Task):
         # for the current `doc`.
         #return {}
         ll_yes, ll_no = results
-        gold = doc["instance_fine_pos"]
+        gold = doc["first_labels"]
 
+        # TODO this might be false 
         acc = 1.0 if (ll_yes > ll_no) == gold else 0.0
 
         return {"acc": acc}
@@ -159,3 +169,5 @@ class FSE(Task):
         # with the metric name as key and a `bool` value determining whether or
         # not higher values of that metric are deemed better.
         return {"acc": True}
+
+
