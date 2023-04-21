@@ -11,6 +11,8 @@ generative pre-trained models on WSD.
 Homepage: TODO: Add the URL to the task's Homepage here.
 """
 import random
+#from datasets import concatenate_datasets
+import datasets
 
 from lm_eval.base import Task, rf
 from lm_eval.metrics import mean
@@ -23,16 +25,23 @@ _CITATION = """
 class WSD(Task):
     VERSION = 0
     DATASET_PATH = "GETALP/FLUE_WSD"  
-    DATASET_NAME = "SemEval"  
+    DATASET_NAME = None #"SemEval"  
 
     def has_training_docs(self):
         return True
 
     def has_validation_docs(self):
-        return False
+        return True
 
     def has_test_docs(self):
-        return False 
+        return True
+
+    def split_dataset(self):
+        wngt_semcor_dataset = datasets.concatenate_datasets([self.dataset['SemCor'], self.dataset['WNGT']]) 
+        train_valid = wngt_semcor_dataset.train_test_split(test_size=0.005, shuffle=True)
+        train_split = train_valid['train']
+        valid_split = train_valid['test']
+        return train_split, valid_split
 
     def training_docs(self):
         if self.has_training_docs():
@@ -46,11 +55,24 @@ class WSD(Task):
                 # `map(self._process_doc, self.dataset["validation"])`
                 # In most case you can leave this as is unless the dataset split is
                 # named differently than the default `"train"`.
-                self._training_docs = list(map(self._process_doc, self.dataset["train"])) 
+                train_split, valid_split = self.split_dataset()
+                self._training_docs = list(map(self._process_doc, train_split)) 
                 #list(self.dataset["train"])  # SemEval
             return self._training_docs
     
-    """
+    def validation_docs(self):
+        if self.has_validation_docs():
+            # TODO: Return the validation document generator from `self.dataset`.
+            # If you need to process the data, `map` over the documents with the
+            # custom processing function, `self._process_doc`. E.g.
+            # `map(self._process_doc, self.dataset["validation"])`
+            # In most case you can leave this as is unless the dataset split is
+            # named differently than the default `"validation"`.
+            if self._validation_docs is None:
+                train_split, valid_split = self.split_dataset()
+                self._validation_docs = list(map(self._process_doc, valid_split))
+            return self._validation_docs
+    
     def test_docs(self):
         if self.has_test_docs():
             # TODO: Return the test document generator from `self.dataset`.
@@ -60,8 +82,8 @@ class WSD(Task):
             # In most case you can leave this as is unless the dataset split is
             # named differently than the default `"test"`.
             #return self.dataset["test"]
-            return map(self._process_doc, self.dataset["test"])
-    """
+            return map(self._process_doc, self.dataset["SemEval"])
+    
     
     def _process_doc(self, doc):
         # TODO: Process (detokenize, strip, replace etc.) each individual `doc`
@@ -71,6 +93,8 @@ class WSD(Task):
         # NOTE: DELETE THIS FUNCTION IF UNUSED.
         doc['surface_forms'] = ' '.join(doc['surface_forms']) 
         return doc
+    
+    # TODO refacto from here ##############################################
     
     def pick_one_ambiguous(self, doc):
         # Pick up one word out of all the ambiguous ones to feed it into the prompt

@@ -21,22 +21,29 @@ _CITATION = """
 class VSD(Task):
     VERSION = 0
     DATASET_PATH = "GETALP/FLUE_VSD" 
-    DATASET_NAME = "FSE"  
+    DATASET_NAME = None #"FSE"  
 
     def has_training_docs(self):
         return True
 
     def has_validation_docs(self):
-        return False
+        return True
 
     def has_test_docs(self):
-        return False  
+        return True  
 
     # TODO delete, moved to _process_doc 
     def vec_to_sent(example):
         # Custom function to reconstruct the sentences into str and not arrays
         example['surface_forms'] = ' '.join(example['surface_forms']) 
         return example
+    
+    def split_dataset(self):
+        wiki_split = self.dataset['wiki_FSE_verbs']
+        train_valid = wiki_split.train_test_split(test_size=0.005, shuffle=True)  # TODO check the size it needs 
+        train_split = train_valid['train']
+        valid_split= train_valid['test']
+        return train_split, valid_split
 
     def training_docs(self):
         if self.has_training_docs():
@@ -50,12 +57,24 @@ class VSD(Task):
                 # `map(self._process_doc, self.dataset["validation"])`
                 # In most case you can leave this as is unless the dataset split is
                 # named differently than the default `"train"`.
-                self._training_docs = list(map(self._process_doc, self.dataset["train"])) 
-                #list(self.dataset["train"])  # SemEval
+                train_split, valid_split = self.split_dataset()
+                self._training_docs = list(map(self._process_doc, train_split)) 
+                #list(self.dataset["train"])
             return self._training_docs 
           
-    # TODO should I split the dataset here ? 
-    """
+    def validation_docs(self):
+        if self.has_validation_docs():
+            # TODO: Return the validation document generator from `self.dataset`.
+            # If you need to process the data, `map` over the documents with the
+            # custom processing function, `self._process_doc`. E.g.
+            # `map(self._process_doc, self.dataset["validation"])`
+            # In most case you can leave this as is unless the dataset split is
+            # named differently than the default `"validation"`.
+            if self._validation_docs is None:
+                train_split, valid_split = self.split_dataset()
+                self._validation_docs = list(map(self._process_doc, valid_split))
+            return self._validation_docs
+    
     def test_docs(self):
         if self.has_test_docs():
             # TODO: Return the test document generator from `self.dataset`.
@@ -65,8 +84,8 @@ class VSD(Task):
             # In most case you can leave this as is unless the dataset split is
             # named differently than the default `"test"`.
             #return self.dataset["test"]
-            return map(self._process_doc, self.dataset["test"])
-    """
+            return map(self._process_doc, self.dataset["FSE"])
+    
     
     def _process_doc(self, doc):
         # TODO: Process (detokenize, strip, replace etc.) each individual `doc`
@@ -77,7 +96,7 @@ class VSD(Task):
         doc['surface_forms'] = ' '.join(doc['surface_forms']) 
         return doc
 
-
+    # TODO refacto from here ##############################################
     def doc_to_text(self, doc):
         # TODO: Format the query prompt portion of the document example.
         # TODO: find the right prompt to trigger the task 
