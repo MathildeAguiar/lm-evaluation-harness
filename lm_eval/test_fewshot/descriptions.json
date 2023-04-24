@@ -1,6 +1,4 @@
 {
-    "fse": "Quel est le sens du verbe dans son contexte ?",
-    "semcor": "Quel est le sens du mot dans son contexte ?",
-    "semeval": "Quel est le sens du mot dans son contexte ?",
-    "wngt": "Quel est le sens du mot dans son contexte ?"
+    "flue_vsd": "Quel est l'id qui correspond au verbe dans son contexte ?",
+    "flue_wsd": "Quel est l'id qui correspond au nom dans son contexte ?"
 }
