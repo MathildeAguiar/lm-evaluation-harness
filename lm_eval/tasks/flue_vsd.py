@@ -110,6 +110,15 @@ class VSD(Task):
                 doc["instance_surface_forms"]
                 )
         )
+    
+    # NOTE: Manual dummy 
+    def doc_to_text(self, doc):
+        return (
+            "Contexte : Cela aboutit à la capture de Huntsville le 11 avril 1862 ."
+            "\nID: d001.s012.t000"  
+            "\nQuestion: Quel gloss correspond au verbe dont l'ID a été donné dans le contexte de cette phrase ?"
+            "\nRéponse:"
+        )
 
     def doc_to_target(self, doc):
         # TODO: Fill in the `target` ("gold answer") variable.
@@ -117,7 +126,9 @@ class VSD(Task):
         # `doc_to_target` strings.
         #target = doc['disambiguate_labels']  #""
         #return " " + target
-        return " {}".format({0: "non", 1: "oui"}[doc["instance_fine_pos"]])  # TODO same as previous todo
+        #return " {}".format({0: "non", 1: "oui"}[doc["instance_fine_pos"]])  # TODO same as previous todo
+        # TODO for the manual test
+        return "  __ws_1_APlisé__adj__1"
 
     def construct_requests(self, doc, ctx):
         """Uses RequestFactory to construct Requests and returns an iterable of
@@ -136,9 +147,11 @@ class VSD(Task):
         # TODO I have no idea how I should do it 
         #cont_request = rf.greedy_until(ctx, ["\nQuestion:"])
         #return cont_request
-        ll_yes, _ = rf.loglikelihood(ctx, " oui")
-        ll_no, _ = rf.loglikelihood(ctx, " non")
-        return ll_yes, ll_no
+        #ll_yes, _ = rf.loglikelihood(ctx, " oui")
+        #ll_no, _ = rf.loglikelihood(ctx, " non")
+        #return ll_yes, ll_no
+        ll, is_prediction = rf.loglikelihood(ctx, "  __ws_1_APlisé__adj__1")
+        return is_prediction
 
 
     def process_results(self, doc, results):
@@ -154,13 +167,16 @@ class VSD(Task):
         # TODO: For each (sub)metric in the task evaluation, add a key-value pair
         # with the metric name as key and the corresponding metric result as value
         # for the current `doc`.
-        #return {}
+        """       
         ll_yes, ll_no = results
         gold = doc["instance_fine_pos"]
 
         acc = 1.0 if (ll_yes > ll_no) == gold else 0.0
 
         return {"acc": acc}
+        """
+        (is_prediction,) = results
+        return {"acc": is_prediction}
 
     def aggregation(self):
         """
