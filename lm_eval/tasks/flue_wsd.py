@@ -108,11 +108,12 @@ class WSD(Task):
 
         return ambiguous_word_idx
 
-
+    # TODO uncomment after manual test
+    """
     def doc_to_text(self, doc):
         # TODO: Format the query prompt portion of the document example.
         # TODO: find the right prompt to trigger the task 
-        idx = self.pick_one_ambiguous(doc)
+        idx = self.pick_one_ambiguous(doc)  # TODO: keep ? 
         print("IDX DEBUG", idx)
         return (
             "Contexte: {}"
@@ -123,6 +124,18 @@ class WSD(Task):
                 doc["lemmas"][idx]
                 )
         )
+    """
+
+    # Dummy to test 1 request fully manual 
+
+    def doc_to_text(self, doc):
+        return(
+            "Contexte : Le groupe des Nations_Unies a des projets de plan pour la réduction des émissions"
+            "\nID: d001.s001.t001"
+            "\nQuestion: Quel gloss correspond au mot dont l'ID a été donné dans le contexte de cette phrase ?"
+            "\nRéponse:"
+        )
+        pass
 
     def doc_to_target(self, doc):
         # TODO: Fill in the `target` ("gold answer") variable.
@@ -130,8 +143,11 @@ class WSD(Task):
         # `doc_to_target` strings.
         #target = doc['disambiguate_labels']  #""
         #return " " + target
-        # TODO since we are selecting a random element this is false 
-        return " {}".format({0: "non", 1: "oui"}[doc["first_labels"]])
+        #return " {}".format({0: "non", 1: "oui"}[doc["first_labels"]])
+        # TODO check with this format 
+        #return " "+ doc['first_labels']
+        # TODO for the manual test
+        return "  group%1:03:00"
 
     def construct_requests(self, doc, ctx):
         """Uses RequestFactory to construct Requests and returns an iterable of
@@ -149,9 +165,15 @@ class WSD(Task):
         # and return them as an iterable.
         #cont_request = rf.greedy_until(ctx, ["\nQuestion:"])
         #return cont_request
-        ll_yes, _ = rf.loglikelihood(ctx, " oui")
-        ll_no, _ = rf.loglikelihood(ctx, " non")
-        return ll_yes, ll_no
+        #ll_yes, _ = rf.loglikelihood(ctx, " oui")
+        #ll_no, _ = rf.loglikelihood(ctx, " non")
+        #return ll_yes, ll_no
+        # NOTE: 2nd vers
+        #ll, is_prediction = rf.loglikelihood(ctx, " "+doc['first_labels'])
+        #return is_prediction
+        # TODO: manual dummy 
+        ll, is_prediction = rf.loglikelihood(ctx, "  group%1:03:00")
+        return is_prediction
 
 
     def process_results(self, doc, results):
@@ -167,7 +189,7 @@ class WSD(Task):
         # TODO: For each (sub)metric in the task evaluation, add a key-value pair
         # with the metric name as key and the corresponding metric result as value
         # for the current `doc`.
-        #return {}
+        """
         ll_yes, ll_no = results
         gold = doc["first_labels"]
 
@@ -175,6 +197,9 @@ class WSD(Task):
         acc = 1.0 if (ll_yes > ll_no) == gold else 0.0
 
         return {"acc": acc}
+        """
+        (is_prediction,) = results
+        return {"acc": is_prediction}
 
     def aggregation(self):
         """

@@ -101,7 +101,8 @@ class VSD(Task):
         # TODO: Format the query prompt portion of the document example.
         # TODO: find the right prompt to trigger the task 
         return (
-            "Contexte: {}"
+            "Contexte: {}",
+            "ID: {}"
             "\nQuestion: Est-ce que {} correspond au mot {} dans son contexte ?"
             "\nRéponse:".format(
                 doc["surface_forms"],

@@ -52,10 +52,8 @@ from . import gsm8k
 from . import storycloze
 from . import toxigen
 from . import crowspairs
-from . import wsd
 from . import flue_vsd
 from . import flue_wsd
-from . import flue
 
 ########################################
 # Translation tasks
