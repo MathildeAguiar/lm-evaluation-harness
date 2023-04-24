@@ -97,6 +97,7 @@ class VSD(Task):
         return doc
 
     # TODO refacto from here ##############################################
+    """
     def doc_to_text(self, doc):
         # TODO: Format the query prompt portion of the document example.
         # TODO: find the right prompt to trigger the task 
@@ -110,6 +111,7 @@ class VSD(Task):
                 doc["instance_surface_forms"]
                 )
         )
+    """
     
     # NOTE: Manual dummy 
     def doc_to_text(self, doc):
