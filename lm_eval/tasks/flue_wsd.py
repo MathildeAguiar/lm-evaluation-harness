@@ -25,7 +25,8 @@ _CITATION = """
 class WSD(Task):
     VERSION = 0
     DATASET_PATH = "GETALP/FLUE_WSD"  
-    DATASET_NAME = None #"SemEval"  
+    DATASET_NAME = None #"SemEval"
+    IDX = 0  
 
     def has_training_docs(self):
         return True
@@ -91,41 +92,46 @@ class WSD(Task):
         # dataset split. See the TODOs in `train_docs`, `validation_docs`, and
         # `test_docs` for snippets.
         # NOTE: DELETE THIS FUNCTION IF UNUSED.
-        doc['surface_forms'] = ' '.join(doc['surface_forms']) 
+        doc['sentence_fr'] = ' '.join(doc['surface_forms']) 
         return doc
     
     # TODO refacto from here ##############################################
-    
     def pick_one_ambiguous(self, doc):
         # Pick up one word out of all the ambiguous ones to feed it into the prompt
         list_ambiguous = []
         for i in doc["first_labels"]:
             if i != '<NONE>':
                 idx = doc["first_labels"].index(i)
-                list_ambiguous.append(idx)
+                #list_ambiguous.append(idx)
         
-        ambiguous_word_idx = random.choice(list_ambiguous)
+        #print(list_ambiguous)
+        #ambiguous_word_idx = random.choice(list_ambiguous)
+                self.IDX = idx  #ambiguous_word_idx
+                break
+            # TODO correct this 
 
-        return ambiguous_word_idx
-
+        #return ambiguous_word_idx    
+    
     # TODO uncomment after manual test
-    """
+
     def doc_to_text(self, doc):
         # TODO: Format the query prompt portion of the document example.
         # TODO: find the right prompt to trigger the task 
         idx = self.pick_one_ambiguous(doc)  # TODO: keep ? 
-        print("IDX DEBUG", idx)
-        return (
-            "Contexte: {}"
-            "\nQuestion: Est-ce que {} correspond au mot {} dans son contexte ?"
-            "\nRéponse:".format(
-                doc["surface_forms"],
-                doc["first_labels"][idx],
-                doc["lemmas"][idx]
-                )
+        #print("IDX DEBUG", idx)
+        print("SELF IDX", self.IDX)
+        print('aaaaaaaaaaaaaah', doc['sentence_fr'])
+        print("ccccc", doc['surface_forms'])
+        print('bbbbbbbbbbb', doc['surface_forms'][self.IDX])
+        text = (
+            f"Contexte: {doc['sentence_fr']}\n"+
+            f"Mot: {doc['surface_forms'][self.IDX]}"+
+            "\nQuestion: Quel gloss correspond au mot donné dans le contexte de cette phrase ?"+
+            "\nRéponse:"             
         )
+        return text
+    
     """
-
     # Dummy to test 1 request fully manual 
 
     def doc_to_text(self, doc):
@@ -135,7 +141,7 @@ class WSD(Task):
             "\nQuestion: Quel gloss correspond au mot dont l'ID a été donné dans le contexte de cette phrase ?"
             "\nRéponse:"
         )
-        pass
+    """
 
     def doc_to_target(self, doc):
         # TODO: Fill in the `target` ("gold answer") variable.
@@ -144,11 +150,14 @@ class WSD(Task):
         #target = doc['disambiguate_labels']  #""
         #return " " + target
         #return " {}".format({0: "non", 1: "oui"}[doc["first_labels"]])
-        # TODO check with this format 
-        #return " "+ doc['first_labels']
+        # TODO check with this format
+        idx = self.pick_one_ambiguous(doc)  # TODO rm
+        print("IDX DEBUG", idx)
+        return " "+doc['first_labels'][self.IDX]
         # TODO for the manual test
-        return "  group%1:03:00"
+        #return "  group%1:03:00"
 
+    # TODO: should we use loglikelihood ? and how to
     def construct_requests(self, doc, ctx):
         """Uses RequestFactory to construct Requests and returns an iterable of
         Requests which will be sent to the LM.
@@ -169,11 +178,13 @@ class WSD(Task):
         #ll_no, _ = rf.loglikelihood(ctx, " non")
         #return ll_yes, ll_no
         # NOTE: 2nd vers
-        #ll, is_prediction = rf.loglikelihood(ctx, " "+doc['first_labels'])
-        #return is_prediction
-        # TODO: manual dummy 
-        ll, is_prediction = rf.loglikelihood(ctx, "  group%1:03:00")
+        idx = self.pick_one_ambiguous(doc)  # TODO rm
+        print("IDX DEBUG", idx)
+        ll, is_prediction = rf.loglikelihood(ctx, " "+doc['first_labels'][self.IDX])
         return is_prediction
+        # TODO: manual dummy 
+        #ll, is_prediction = rf.loglikelihood(ctx, "  group%1:03:00")
+        #return is_prediction
 
 
     def process_results(self, doc, results):
@@ -198,6 +209,8 @@ class WSD(Task):
 
         return {"acc": acc}
         """
+        print("RESSS", results)
+        print("RESSS aaaa", results[0])
         (is_prediction,) = results
         return {"acc": is_prediction}
 

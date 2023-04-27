@@ -47,7 +47,7 @@ class DryrunLM(LM):
 def main():
     lm = DryrunLM()
 
-    task_list = "arc_challenge,arc_easy,boolq,cola,copa,flue,headqa,hellaswag,lambada,logiqa,mathqa,mc_taco,mrpc,multirc,openbookqa,piqa,prost,pubmedqa,qnli,qqp,race,record,rte,sciq,sst,triviaqa,webqs,wic,wikitext,winogrande,wnli,wsc"
+    task_list = "arc_challenge,arc_easy,boolq,cola,copa,flue,headqa,hellaswag,lambada,logiqa,mathqa,mc_taco,mrpc,multirc,openbookqa,piqa,prost,pubmedqa,qnli,qqp,race,record,rte,sciq,sst,triviaqa,webqs,wic,wikitext,winogrande,wnli,wsc,flue_wsd,flue_vsd"
     values = []
     for taskname in task_list.split(","):
         lm.tokencost = 0
